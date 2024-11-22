@@ -1,0 +1,20 @@
+@font-face {
+  font-family: Inter;
+  src: url(../fonts/Inter_18pt-Regular.ttf);
+}
+
+@font-face {
+  font-family: InterBold;
+  src: url(../fonts/Inter_18pt-Bold.ttf)
+}
+
+body {
+    background-color: #FF7B54;
+    color: #FFFFFF;
+    font-family: 'InterBold';
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
