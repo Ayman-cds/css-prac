@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SignOutButton } from "@/features/auth-magic-link";
 
 const links = [
   { href: "/", label: "Overview" },
@@ -59,7 +60,7 @@ function NavIcon({ name }: { name: string }) {
   }
 }
 
-export function Nav() {
+export function Nav({ userEmail }: { userEmail?: string | null }) {
   return (
     <>
       <aside className="hidden md:fixed md:inset-y-0 md:left-0 md:flex md:w-60 md:flex-col md:px-4 md:py-8">
@@ -81,6 +82,14 @@ export function Nav() {
             </Link>
           ))}
         </nav>
+        <div className="mt-auto">
+          {userEmail && (
+            <div className="mb-2 px-3 text-[11px] text-ink-dim">
+              <div className="truncate">{userEmail}</div>
+            </div>
+          )}
+          <SignOutButton />
+        </div>
       </aside>
 
       <nav className="glass-strong fixed inset-x-2 bottom-2 z-30 flex rounded-2xl px-1 py-1.5 shadow-card md:hidden">

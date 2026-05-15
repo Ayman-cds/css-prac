@@ -6,6 +6,7 @@ const PUBLIC_PATHS = ["/login", "/auth/callback"];
 function isApiIngest(p: string) {
   return p.startsWith("/api/ingest");
 }
+
 function isStatic(p: string) {
   return (
     p.startsWith("/_next") ||
@@ -16,6 +17,20 @@ function isStatic(p: string) {
   );
 }
 
+/**
+ * Auth gate for every request except:
+ *  - /api/ingest (bearer-token auth from iOS Shortcut)
+ *  - /login, /auth/callback (public)
+ *  - static assets
+ *
+ * Uses getUser() — validates the JWT against Supabase rather than just
+ * reading the cookie. This is the authoritative check; cookie tampering
+ * cannot fake a session.
+ *
+ * Note: route-group layouts (src/app/(app)/layout.tsx) also gate themselves
+ * server-side via getUser() — this middleware is the first line of defense,
+ * the layout is the second. Defense in depth.
+ */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -42,14 +57,16 @@ export async function middleware(req: NextRequest) {
     },
   );
 
+  // getUser() refreshes the session if expired AND verifies the JWT.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const isPublic = PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 
-  if (!session && !isPublic) {
+  if (!user && !isPublic) {
     if (pathname.startsWith("/api/")) {
       return new NextResponse(JSON.stringify({ error: "unauthorized" }), {
         status: 401,
@@ -62,7 +79,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (session && pathname === "/login") {
+  if (user && pathname === "/login") {
     const url = req.nextUrl.clone();
     url.pathname = "/";
     url.searchParams.delete("next");

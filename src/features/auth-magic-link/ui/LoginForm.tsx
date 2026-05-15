@@ -25,47 +25,59 @@ export function LoginForm() {
     setStatus("sent");
   }
 
-  return (
-    <div className="mx-auto max-w-sm">
-      <div className="mb-8">
-        <h1 className="font-display text-[28px] font-semibold tracking-display text-ink">
-          Sign in
-        </h1>
-        <p className="mt-1 text-[14px] text-ink-muted">
-          You&apos;ll get a magic link by email.
-        </p>
-      </div>
-
-      {status === "sent" ? (
-        <div className="glass rounded-2xl p-4 text-[13px] text-ink">
-          Check <b>{email}</b> for a sign-in link.
+  if (status === "sent") {
+    return (
+      <div className="glass rounded-2xl p-5 text-center">
+        <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-success/15 text-success">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+            <path d="m5 12 5 5L20 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
-      ) : (
-        <form onSubmit={submit} className="space-y-3">
-          <label className="block">
-            <span className="block text-[11px] uppercase tracking-[0.10em] text-ink-dim">
-              Email
-            </span>
-            <input
-              type="email"
-              required
-              autoFocus
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="mt-1 block w-full rounded-xl bg-bg-elev px-3 py-2.5 text-[15px] text-ink ring-1 ring-line placeholder:text-ink-dim focus:outline-none focus:ring-accent/50"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={status === "sending"}
-            className="w-full rounded-full bg-accent py-2.5 text-[14px] font-medium text-white disabled:opacity-50"
-          >
-            {status === "sending" ? "Sending…" : "Send magic link"}
-          </button>
-          {status === "error" && <div className="text-[13px] text-danger">{errMsg}</div>}
-        </form>
+        <div className="text-[15px] font-medium text-ink">Check your email</div>
+        <div className="mt-1 text-[13px] text-ink-muted">
+          We sent a sign-in link to <b className="text-ink">{email}</b>.
+        </div>
+        <button
+          onClick={() => setStatus("idle")}
+          className="mt-4 text-[12px] font-medium text-accent hover:underline"
+        >
+          Use a different email
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <label className="block">
+        <span className="block text-[11px] uppercase tracking-[0.10em] text-ink-dim">
+          Email
+        </span>
+        <input
+          type="email"
+          required
+          autoFocus
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          className="mt-1 block w-full rounded-xl bg-bg-elev px-3 py-2.5 text-[15px] text-ink ring-1 ring-line placeholder:text-ink-dim focus:outline-none focus:ring-accent/50"
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={status === "sending"}
+        className="w-full rounded-full bg-accent py-2.5 text-[14px] font-medium text-white disabled:opacity-50"
+      >
+        {status === "sending" ? "Sending…" : "Continue with email"}
+      </button>
+      {status === "error" && (
+        <div className="rounded-xl bg-danger/15 px-3 py-2 text-[13px] text-danger">
+          {errMsg}
+        </div>
       )}
-    </div>
+      <p className="pt-2 text-center text-[11px] text-ink-dim">
+        We&apos;ll email you a one-time link. No passwords.
+      </p>
+    </form>
   );
 }
