@@ -4,6 +4,7 @@ import { getMerchants } from "@/entities/merchant";
 import { getBudgets } from "@/entities/budget";
 import { Card } from "@/shared/ui/card";
 import { BudgetsEditor } from "@/features/manage-budgets";
+import { ReanalyzeCard } from "@/features/reanalyze-merchants";
 import { CategoryBadge } from "@/entities/category";
 import { formatQar } from "@/shared/lib";
 
@@ -28,6 +29,13 @@ export async function SettingsPage() {
           Tune categorization, budgets, and integrations.
         </p>
       </header>
+
+      <Card
+        title="Re-analyze with AI"
+        hint="Re-run Claude over your merchant catalog"
+      >
+        <ReanalyzeCard />
+      </Card>
 
       <Card title="Budgets" hint="monthly limits">
         <BudgetsEditor categories={categories} budgets={budgets} />

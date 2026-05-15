@@ -4,6 +4,7 @@ import { SignOutButton } from "@/features/auth-magic-link";
 const links = [
   { href: "/", label: "Overview" },
   { href: "/monthly", label: "Monthly" },
+  { href: "/ask", label: "Ask" },
   { href: "/search", label: "Search" },
   { href: "/trends", label: "Trends" },
   { href: "/settings", label: "Settings" },
@@ -33,6 +34,25 @@ function NavIcon({ name }: { name: string }) {
         <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
           <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth={sw} />
           <path d="m16 16 4 4" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" />
+        </svg>
+      );
+    case "Ask":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+          <path
+            d="M21 12a8 8 0 1 1-3.06-6.3L21 4l-1 4-3.94-1"
+            stroke="currentColor"
+            strokeWidth={sw}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M9.5 9.5a2.5 2.5 0 1 1 4 2c-.8.5-1.5 1-1.5 2"
+            stroke="currentColor"
+            strokeWidth={sw}
+            strokeLinecap="round"
+          />
+          <circle cx="12" cy="17" r="0.5" fill="currentColor" />
         </svg>
       );
     case "Trends":

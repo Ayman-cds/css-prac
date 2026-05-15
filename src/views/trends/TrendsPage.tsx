@@ -10,6 +10,8 @@ import { AnomalyBanner } from "@/widgets/anomaly-banner";
 import { Card, CardGrid } from "@/shared/ui/card";
 import { TrendLine, StackedArea } from "@/shared/ui/charts";
 import { formatQar, lastNDays } from "@/shared/lib";
+import { SubscriptionsCard } from "@/widgets/subscriptions-card";
+import { getSubscriptions } from "@/features/recurring-detection";
 
 const SLUG_LABEL: Record<string, string> = {
   dining: "Food & Dining",
@@ -28,9 +30,10 @@ const SLUG_LABEL: Record<string, string> = {
 export async function TrendsPage() {
   const supabase = createSupabaseServerClient();
 
-  const [series, leaderboard] = await Promise.all([
+  const [series, leaderboard, subscriptions] = await Promise.all([
     getTwelveMonthSeries(supabase),
     getMerchantLeaderboard(supabase, 10),
+    getSubscriptions(supabase),
   ]);
 
   // anomalies
@@ -70,6 +73,8 @@ export async function TrendsPage() {
           keyLabels={SLUG_LABEL}
         />
       </Card>
+
+      <SubscriptionsCard subscriptions={subscriptions} />
 
       <Card title="Top merchants" hint="all time">
         {leaderboard.length === 0 ? (

@@ -17,20 +17,26 @@ import { BudgetListCard } from "@/widgets/budget-list";
 import type { BudgetWithSpent } from "@/widgets/budget-list";
 import { RecentTransactionsCard } from "@/widgets/recent-transactions";
 import { CardGrid } from "@/shared/ui/card";
+import { InsightsStrip } from "@/widgets/insights-strip";
+import { getOrGenerateInsights } from "@/features/auto-insights";
 
 export async function OverviewPage() {
   const supabase = createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const now = new Date();
   const monthLabel = monthRange(now).start.toLocaleString("en-GB", {
     month: "long",
     year: "numeric",
   });
 
-  const [summary, recent, dailyTrend, budgets] = await Promise.all([
+  const [summary, recent, dailyTrend, budgets, insights] = await Promise.all([
     getMonthSummary(supabase, now),
     getRecentTransactions(supabase, 12),
     getDailySpend(supabase, 30),
     getBudgets(supabase),
+    user ? getOrGenerateInsights(supabase, user.id) : Promise.resolve([]),
   ]);
 
   // Anomalies: recent (30d) vs prior 90d.
@@ -65,6 +71,8 @@ export async function OverviewPage() {
         prevTotal={summary.prevTotal}
         txCount={summary.txCount}
       />
+
+      <InsightsStrip insights={insights} />
 
       <AnomalyBanner anomalies={anomalies} />
 
