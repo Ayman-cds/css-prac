@@ -1,90 +1,215 @@
-[![Frontend Masters](https://static.frontendmasters.com/assets/brand/logos/full.png)][fem]
+# QNB Expense Dashboard
 
-# Frontend Masters CSS Foundations
-Welcome to Frontend Masters CSS Foundations! You can find the course information [here][course].
+Personal, AI-powered expense intelligence for QNB credit cards.
+Captures every transaction SMS in real time via an iOS Shortcut, parses the
+Arabic message body, categorizes the merchant with Claude Haiku (with a
+rule-based fallback), and surfaces the result through a fast, Apple-styled
+dashboard.
 
-# How To Follow Along
-There are seven chapters to this course. You can find the slides for each chapter below.
-1. [Introduction](https://static.frontendmasters.com/assets/courses/2023-08-30-css-foundations/css-foundations-introduction.pdf)
-2. [Foundation](https://static.frontendmasters.com/assets/courses/2023-08-30-css-foundations/css-foundations-foundation.pdf)
-3. [Header](https://static.frontendmasters.com/assets/courses/2023-08-30-css-foundations/css-foundations-header.pdf)
-4. [Home](https://static.frontendmasters.com/assets/courses/2023-08-30-css-foundations/css-foundations-home.pdf)
-5. [Speakers](https://static.frontendmasters.com/assets/courses/2023-08-30-css-foundations/css-foundations-speakers.pdf)
-6. [Responsive Layout](https://static.frontendmasters.com/assets/courses/2023-08-30-css-foundations/css-foundations-responsive-layout.pdf)
-7. [Wrap Up](https://static.frontendmasters.com/assets/courses/2023-08-30-css-foundations/css-foundations-wrap-up.pdf)
+## Stack
 
-You can view the design files for our project website [here](https://www.figma.com/file/LEzNgBz63KLExeHNUyLCwH/FEM-CSS?type=design&node-id=0-1).
-![Figma showing project](./readme-images/figma.png)
+- **Next.js 14** (App Router, RSC) + TypeScript + Tailwind
+- **Supabase** — Postgres + Auth (magic link) + RLS
+- **Anthropic Claude Haiku 4.5** — merchant categorization
+- **Recharts** — visualization
+- **Vercel** — hosting
 
-To use this repository, complete the following steps:
-1. Fork this repository
-![Create a fork from this repo by clicking the fork button](./readme-images/fork.png)
-2. Be sure your account name is listed, and **uncheck the 'Copy the `main` branch only' checkbox** or you won't fork the chapter branches. Then click the Create Fork button.
-![Select your account from the owner dropdown and uncheck the copy main branch only button, then click create fork.](./readme-images/create-fork.png)
-3. Once the fork is completed you'll see it on your profile.
-![View your fork on your account](./readme-images/view-fork.png)
-4. Clone your forked repository by clicking the green Code button and copying the HTTPS URL.
-![Clone your forked repository by clicking the green Code button and copying the HTTPS URL.](./readme-images/clone.png)
-5. Open your terminal and navigate to a location of your choice on your personal computer that you want to save this repository. I always select my desktop. Then type `git clone` followed by the HTTPS URL you just copied.
+## Architecture — Feature-Sliced Design
+
 ```
-cd Desktop
-git clone [HTTPS url]
+src/
+├── app/         Next.js App Router (thin route wrappers)
+├── pages/       Page-level compositions (Overview, Monthly, Search, …)
+├── widgets/     Composite UI blocks (charts in cards, hero, anomaly banner, …)
+├── features/    User actions / capabilities (sms-ingest, categorize, search-transactions, …)
+├── entities/    Business entities (transaction, category, merchant, budget)
+└── shared/      UI kit, lib, api clients, config
 ```
-![Use the terminal to clone the repo](./readme-images/terminal.png)
 
-Optionally you can use [GitHub Desktop](https://desktop.github.com/) if you prefer a UI to work with Git.  
-6. Open the cloned repository in your code editor of choice. I use [Visual Studio Code](https://code.visualstudio.com/).  
-7. Once you have the GitHub repository forked and cloned, you should start on the main branch. I recommend writing all of your code on the main branch, however if you get stuck or lost, each branch corresponds to the final state after the completed chapter. The branch order is as follows:
+Upper layers depend on lower layers only. Each slice exposes a public API via
+its `index.ts`.
+
 ```
-main
- |_ foundation
-    |_header
-	|_ home
-	  |_ speakers
-            |_ responsive-layout
+┌──────────────┐   ┌────────────────┐   ┌──────────────┐
+│ iPhone       │──▶│ Backend API    │──▶│ Supabase     │
+│ iOS Shortcut │   │ Vercel / Next  │   │ Postgres +   │
+│              │   │                │   │ RLS + Auth   │
+│ - Triggers   │   │ - Parse Arabic │   └──────────────┘
+│   on QNB SMS │   │ - Categorize   │           │
+│ - Forwards   │   │   via Claude   │           ▼
+│   raw text   │   │ - Persist      │   ┌──────────────┐
+└──────────────┘   └────────────────┘   │ Web Dashboard│
+                                        │ Next.js RSC  │
+                                        │ FSD / Apple- │
+                                        │ style UI     │
+                                        └──────────────┘
 ```
-To check out a new branch run `git checkout [branch-name]` (i.e. `git checkout home`)
 
-## Editor Settings
-Below are the visual settings I use in my code editor.
-- **Font**: I’m using the font [Dank Mono](https://philpl.gumroad.com/l/dank-mono) with font ligatures. It’s a paid font for 24 GBP. I also recommend [Fira Code](https://github.com/tonsky/FiraCode) which is free.
-![Dank Mono](./readme-images/dank-mono.png)
-![Fira Code](./readme-images/fira-code.png)
-- **Theme**: I’m using the  Material - Operator Mono/Italic theme.
-![Theme](./readme-images/theme.png)
-- **Plugins**: There are some plugins I recommend installing with VSCode. You can add plugins from the Extensions Marketplace tab in the left navigation.
-![Use the extensions marketplace to add two plugins](./readme-images/extensions.png)
-- **Live Server**: Hot reloads HTML pages when we save files.
-![Live Server](./readme-images/live-server.png)
-- **Prettier**:Formats our code when we save our files.
-![Prettier](./readme-images/prettier.png)
-- **Color Highlight**: Styles CSS colors.
-![Color Highlight](./readme-images/color-highlight.png)
+## Setup
 
-To get Prettier to work properly I had to add a few configurations in my `settings.json` file. To open this file press `command + p` on Mac, and enter `Preferences: Open Workplace Settings (JSON)`. Enter the following in the `settings.json` file and save.
+### 1. Install
 
-```json
+```bash
+npm install
+```
+
+### 2. Create a Supabase project
+
+- Go to [supabase.com](https://supabase.com), create a new project.
+- Apply the migration:
+
+```bash
+# In Supabase Studio → SQL Editor, paste and run:
+#   supabase/migrations/0001_init.sql
+```
+
+- Enable email auth: Authentication → Providers → Email (magic link).
+
+### 3. Configure env
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+ANTHROPIC_API_KEY=...                  # optional — rule-based fallback works without it
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+INGEST_TOKEN=$(openssl rand -hex 24)   # any 32+ char random string
+INGEST_USER_ID=                        # filled after first login (see below)
+```
+
+### 4. First run
+
+```bash
+npm run dev
+```
+
+- Visit `http://localhost:3000` → redirected to `/login`.
+- Sign in with magic link.
+- Open Supabase Studio → Authentication → Users → copy your `id` → paste
+  into `INGEST_USER_ID` in `.env.local`.
+- Re-run the `DO $$ … $$` seed block at the bottom of the migration in
+  Supabase SQL editor. It now sees your user and seeds 11 categories, 10
+  sample transactions (from the PRD), 3 budgets, and 5 merchant rules.
+- Restart `npm run dev`. The dashboard now renders with seeded data.
+
+### 5. Smoke test the parser
+
+```bash
+npm run test:parser
+```
+
+Validates the Arabic SMS regex against the sample messages from PRD §17.
+
+### 6. Smoke test ingestion
+
+```bash
+curl -X POST http://localhost:3000/api/ingest \
+  -H "Authorization: Bearer $INGEST_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data @- <<'JSON'
 {
-    "editor.formatOnSave": true,
-    "editor.formatOnPaste": true,
-    "editor.formatOnType": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "[html]": {
-        "editor.defaultFormatter": "vscode.html-language-features"
-    }
+  "smsText": "تمت عملية شراء ببطاقة الائتمانية.\nرقم البطاقة: فيزا8\nالمبلغ: QAR 45.00\nالموقع: STARBUCKS DOHA\nالرصيد: QAR 1234.56",
+  "receivedAt": "2026-05-15T13:00:00Z"
 }
+JSON
 ```
 
-# Sources
-- Flat Icon
+Expect 201 with `{ status: "ok", category: "dining", …}`. Reload `/` — the
+new transaction appears.
 
-## Photos
-- https://unsplash.com/photos/WYE2UhXsU1Y
-- https://unsplash.com/photos/iEEBWgY_6lA
-- https://unsplash.com/photos/mpDV4xaFP8c
-- https://unsplash.com/photos/SJvDxw0azqw
-- https://unsplash.com/photos/QJEVpydulGs
-- https://unsplash.com/photos/p5BoBF0XJUA
+## Deployment
 
-[fem]: https://frontendmasters.com
-[course]: https://frontendmasters.com/courses/css-foundations/
+### Vercel
+
+```bash
+npx vercel --prod
+```
+
+In Project Settings → Environment Variables, add the same keys as
+`.env.local`. Region defaults to `fra1` (closest Vercel region to Qatar).
+
+### iOS Shortcut
+
+See [`ios-shortcut/README.md`](./ios-shortcut/README.md) for the
+step-by-step automation setup.
+
+## Project layout
+
+```
+src/
+├── app/                      # Next.js App Router routes
+│   ├── api/                  # ingest, recategorize, note, export, budgets
+│   ├── auth/callback/        # Supabase magic-link callback
+│   ├── login/                # /login
+│   ├── monthly/              # /monthly
+│   ├── search/               # /search
+│   ├── settings/             # /settings
+│   ├── transactions/[id]/    # transaction detail
+│   ├── trends/               # /trends
+│   ├── layout.tsx
+│   ├── page.tsx              # Overview
+│   └── globals.css
+├── pages/                    # Page compositions (FSD layer)
+│   ├── overview/             OverviewPage
+│   ├── monthly/              MonthlyPage
+│   ├── search/               SearchPage
+│   ├── settings/             SettingsPage
+│   ├── trends/               TrendsPage
+│   └── transaction-detail/   TransactionDetailPage
+├── widgets/
+│   ├── anomaly-banner/
+│   ├── budget-list/
+│   ├── category-breakdown/
+│   ├── daily-trend/
+│   ├── month-summary-hero/
+│   ├── nav/
+│   └── recent-transactions/
+├── features/
+│   ├── anomaly-detection/    Per-category z-score detection
+│   ├── auth-magic-link/      LoginForm
+│   ├── categorize/           cache → rule → Claude → fallback
+│   ├── edit-transaction-note/
+│   ├── manage-budgets/       BudgetsEditor
+│   ├── month-navigation/     MonthSelector
+│   ├── recategorize-transaction/  CategoryEditor + learning
+│   ├── search-transactions/  SearchForm
+│   └── sms-ingest/           parseQnbSms()
+├── entities/
+│   ├── budget/
+│   ├── category/
+│   ├── merchant/
+│   └── transaction/          queries, types, TransactionRow/List
+├── shared/
+│   ├── api/anthropic/        Claude wrapper
+│   ├── api/supabase/         server / client / admin clients
+│   ├── config/               CategorySlug + global types
+│   ├── lib/                  format, dates, csv, cn
+│   └── ui/                   Card, Button, Amount, charts
+supabase/migrations/0001_init.sql
+ios-shortcut/README.md
+scripts/test-parser.ts
+middleware.ts                  Route protection
+```
+
+## Security
+
+- All data lives in your own Supabase project, encrypted at rest.
+- Dashboard requires a Supabase session — magic link, single user.
+- `/api/ingest` uses a bearer token compared in constant time.
+- Card identifier stored as `visa_8` / `visa_9` only — never the full PAN.
+- The only data leaving your stack is the **merchant name** sent to
+  Anthropic for categorization. No amounts, balances, or card numbers.
+
+## Scripts
+
+- `npm run dev` — local dev server
+- `npm run build` — production build
+- `npm run lint` — Next.js lint
+- `npm run typecheck` — TypeScript only
+- `npm run test:parser` — smoke test the Arabic SMS parser

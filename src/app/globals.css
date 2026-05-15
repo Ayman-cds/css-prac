@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  @apply bg-bg text-ink font-sans min-h-screen;
+  font-feature-settings: "cv11", "ss01", "ss03";
+  letter-spacing: -0.01em;
+  background-image:
+    radial-gradient(60vw 80vh at 20% -10%, rgba(10, 132, 255, 0.10), transparent 60%),
+    radial-gradient(50vw 60vh at 110% 10%, rgba(191, 90, 242, 0.07), transparent 55%);
+  background-attachment: fixed;
+}
+
+[dir="rtl"] {
+  font-family: "SF Arabic", "IBM Plex Sans Arabic", system-ui, sans-serif;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.glass {
+  background: rgba(28, 28, 30, 0.62);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.glass-strong {
+  background: rgba(28, 28, 30, 0.82);
+  backdrop-filter: saturate(180%) blur(28px);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.recharts-default-tooltip {
+  background-color: rgba(28, 28, 30, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  color: #f5f5f7 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
+  padding: 8px 12px !important;
+}
+.recharts-tooltip-label {
+  color: rgba(235, 235, 245, 0.60) !important;
+  font-size: 11px !important;
+  margin-bottom: 4px !important;
+}
+.recharts-tooltip-item-name,
+.recharts-tooltip-item-value {
+  color: #f5f5f7 !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+*:focus-visible {
+  outline: 2px solid rgba(10, 132, 255, 0.55);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
