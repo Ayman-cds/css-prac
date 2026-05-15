@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:parser": "tsx scripts/test-parser.ts"
+    "test:parser": "tsx scripts/test-parser.ts",
+    "backfill": "tsx scripts/backfill.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
