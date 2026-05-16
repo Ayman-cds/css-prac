@@ -19,7 +19,13 @@ export default async function AuthLayout({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-10">
+    <div
+      className="flex min-h-screen items-center justify-center px-4"
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top) + 2.5rem)",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 2.5rem)",
+      }}
+    >
       <div className="w-full max-w-sm">
         <div className="mb-10 text-center">
           <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15 text-accent">

@@ -171,7 +171,10 @@ export function Nav({
         </div>
       </aside>
 
-      <nav className="glass-strong fixed inset-x-2 bottom-2 z-30 flex rounded-2xl px-1 py-1.5 shadow-card md:hidden">
+      <nav
+        className="glass-strong fixed inset-x-2 z-30 flex rounded-2xl px-1 py-1.5 shadow-card md:hidden"
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
+      >
         {links.map((l) => {
           const active = isActive(l.href);
           return (

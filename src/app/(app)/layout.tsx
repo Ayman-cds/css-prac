@@ -35,9 +35,16 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-screen pb-28 md:pb-0 md:pl-60">
+    <div className="min-h-screen md:pl-60">
       <Nav userEmail={user.email} smartCategories={smartCategories} />
-      <main className="mx-auto w-full max-w-5xl px-4 pt-6 pb-10 sm:px-6 md:pt-12 md:pb-16">
+      <main
+        className="mx-auto w-full max-w-5xl px-4 sm:px-6 md:pt-12 md:pb-16"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 1.5rem)",
+          paddingBottom:
+            "calc(env(safe-area-inset-bottom) + 7rem)",
+        }}
+      >
         {children}
       </main>
     </div>

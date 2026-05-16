@@ -9,8 +9,7 @@ import {
 } from "@/entities/transaction";
 import { getBudgets } from "@/entities/budget";
 import { detectAnomalies } from "@/features/anomaly-detection";
-import { MonthSummaryHero } from "@/widgets/month-summary-hero";
-import { AnomalyBanner } from "@/widgets/anomaly-banner";
+import { HeadlineCard } from "@/widgets/headline-card";
 import { CategoryBreakdownCard } from "@/widgets/category-breakdown";
 import { DailyTrendCard } from "@/widgets/daily-trend";
 import { BudgetListCard } from "@/widgets/budget-list";
@@ -69,18 +68,17 @@ export async function OverviewPage() {
 
   return (
     <div className="space-y-6">
-      <RecentTransactionsCard transactions={recent} />
-
-      <MonthSummaryHero
+      <HeadlineCard
         monthLabel={monthLabel}
         total={summary.total}
         prevTotal={summary.prevTotal}
         txCount={summary.txCount}
+        anomalies={anomalies}
       />
 
-      <InsightsStrip insights={insights} />
+      <RecentTransactionsCard transactions={recent} />
 
-      <AnomalyBanner anomalies={anomalies} />
+      <InsightsStrip insights={insights} />
 
       <CardGrid className="md:grid-cols-2">
         <CategoryBreakdownCard breakdown={summary.breakdown} total={summary.total} />
