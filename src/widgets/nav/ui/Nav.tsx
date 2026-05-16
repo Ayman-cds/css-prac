@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { SignOutButton } from "@/features/auth-magic-link";
+import { cn } from "@/shared/lib";
 
 const links = [
   { href: "/", label: "Overview" },
@@ -80,6 +84,14 @@ function NavIcon({ name }: { name: string }) {
   }
 }
 
+function useIsActive() {
+  const pathname = usePathname();
+  return function isActive(href: string): boolean {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+}
+
 export function Nav({
   userEmail,
   smartCategories = [],
@@ -87,6 +99,8 @@ export function Nav({
   userEmail?: string | null;
   smartCategories?: Array<{ id: string; name: string; emoji: string }>;
 }) {
+  const isActive = useIsActive();
+
   return (
     <>
       <aside className="hidden md:fixed md:inset-y-0 md:left-0 md:flex md:w-60 md:flex-col md:overflow-y-auto md:px-4 md:py-8">
@@ -95,34 +109,56 @@ export function Nav({
           <div className="mt-0.5 text-[12px] text-ink-muted">personal intelligence</div>
         </div>
         <nav className="flex flex-col gap-0.5">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] text-ink/90 transition-colors hover:bg-bg-hover"
-            >
-              <span className="text-ink-muted group-hover:text-ink">
-                <NavIcon name={l.label} />
-              </span>
-              <span>{l.label}</span>
-            </Link>
-          ))}
+          {links.map((l) => {
+            const active = isActive(l.href);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] transition-colors",
+                  active
+                    ? "bg-accent/15 text-accent"
+                    : "text-ink/90 hover:bg-bg-hover",
+                )}
+              >
+                <span
+                  className={cn(
+                    active ? "text-accent" : "text-ink-muted group-hover:text-ink",
+                  )}
+                >
+                  <NavIcon name={l.label} />
+                </span>
+                <span>{l.label}</span>
+              </Link>
+            );
+          })}
         </nav>
         {smartCategories.length > 0 && (
           <nav className="mt-6 flex flex-col gap-0.5">
             <div className="mb-1 px-3 text-[10px] font-medium uppercase tracking-[0.10em] text-ink-dim">
               Smart
             </div>
-            {smartCategories.map((s) => (
-              <Link
-                key={s.id}
-                href={`/smart/${s.id}`}
-                className="group flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] text-ink/90 transition-colors hover:bg-bg-hover"
-              >
-                <span className="text-[14px]">{s.emoji}</span>
-                <span className="truncate">{s.name}</span>
-              </Link>
-            ))}
+            {smartCategories.map((s) => {
+              const active = isActive(`/smart/${s.id}`);
+              return (
+                <Link
+                  key={s.id}
+                  href={`/smart/${s.id}`}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-colors",
+                    active
+                      ? "bg-accent/15 text-accent"
+                      : "text-ink/90 hover:bg-bg-hover",
+                  )}
+                >
+                  <span className="text-[14px]">{s.emoji}</span>
+                  <span className="truncate">{s.name}</span>
+                </Link>
+              );
+            })}
           </nav>
         )}
         <div className="mt-auto pt-4">
@@ -136,18 +172,27 @@ export function Nav({
       </aside>
 
       <nav className="glass-strong fixed inset-x-2 bottom-2 z-30 flex rounded-2xl px-1 py-1.5 shadow-card md:hidden">
-        {links.map((l) => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-[10px] font-medium text-ink-muted active:bg-bg-hover"
-          >
-            <span className="text-ink">
-              <NavIcon name={l.label} />
-            </span>
-            {l.label}
-          </Link>
-        ))}
+        {links.map((l) => {
+          const active = isActive(l.href);
+          return (
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-[10px] font-medium transition-colors",
+                active
+                  ? "bg-accent/15 text-accent"
+                  : "text-ink-muted active:bg-bg-hover",
+              )}
+            >
+              <span className={active ? "text-accent" : "text-ink"}>
+                <NavIcon name={l.label} />
+              </span>
+              {l.label}
+            </Link>
+          );
+        })}
       </nav>
     </>
   );

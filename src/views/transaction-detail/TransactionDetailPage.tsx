@@ -10,6 +10,7 @@ import { Card } from "@/shared/ui/card";
 import { Amount } from "@/shared/ui/amount";
 import { CategoryEditor } from "@/features/recategorize-transaction";
 import { NoteEditor } from "@/features/edit-transaction-note";
+import { TransactionActions } from "@/features/manage-transaction";
 import { TransactionRow } from "@/entities/transaction";
 import { formatDate, dirFor, formatQar } from "@/shared/lib";
 
@@ -81,6 +82,10 @@ export async function TransactionDetailPage({ id }: { id: string }) {
 
       <Card title="Note">
         <NoteEditor transactionId={tx.id} initial={tx.notes} />
+      </Card>
+
+      <Card title="Manage">
+        <TransactionActions transactionId={tx.id} hidden={tx.hidden} />
       </Card>
 
       <Card title="Original SMS">

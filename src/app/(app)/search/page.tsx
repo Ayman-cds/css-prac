@@ -12,6 +12,8 @@ function toFilters(sp: Record<string, string | undefined>): SearchFilters {
     to: sp.to || undefined,
     minAmount: sp.minAmount ? Number(sp.minAmount) : undefined,
     maxAmount: sp.maxAmount ? Number(sp.maxAmount) : undefined,
+    onlyHidden: sp.onlyHidden === "true" ? true : undefined,
+    includeHidden: sp.includeHidden === "true" ? true : undefined,
   };
 }
 

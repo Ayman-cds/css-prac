@@ -4,21 +4,40 @@ import { toCsv } from "@/shared/lib";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest) {
+type ExportRow = {
+  occurred_at: string;
+  card_last_digit: string | null;
+  amount_qar: number;
+  is_approximate: boolean;
+  merchant_raw: string;
+  merchant_normalized: string;
+  balance_qar: number | null;
+  notes: string | null;
+  user_corrected: boolean;
+  hidden: boolean;
+  categories: { slug: string; name: string } | null;
+};
+
+export async function GET(req: NextRequest) {
   const supabase = createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { data: rows } = await supabase
+  const includeHidden = req.nextUrl.searchParams.get("includeHidden") === "true";
+
+  let q = supabase
     .from("transactions")
     .select(
-      "occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, balance_qar, notes, user_corrected, categories(slug, name)",
+      "occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, balance_qar, notes, user_corrected, hidden, categories(slug, name)",
     )
     .order("occurred_at", { ascending: false });
+  if (!includeHidden) q = q.eq("hidden", false);
 
-  const flat = (rows ?? []).map((r: any) => ({
+  const { data: rows } = await q;
+
+  const flat = ((rows ?? []) as unknown as ExportRow[]).map((r) => ({
     occurred_at: r.occurred_at,
     card: r.card_last_digit ? `visa_${r.card_last_digit}` : "",
     amount_qar: r.amount_qar,
@@ -30,6 +49,7 @@ export async function GET(_req: NextRequest) {
     balance_qar: r.balance_qar ?? "",
     notes: r.notes ?? "",
     user_corrected: r.user_corrected ? "true" : "false",
+    hidden: r.hidden ? "true" : "false",
   }));
 
   const csv = toCsv(flat, [
@@ -44,6 +64,7 @@ export async function GET(_req: NextRequest) {
     { key: "balance_qar", header: "balance_qar" },
     { key: "notes", header: "notes" },
     { key: "user_corrected", header: "user_corrected" },
+    { key: "hidden", header: "hidden" },
   ]);
 
   return new NextResponse(csv, {

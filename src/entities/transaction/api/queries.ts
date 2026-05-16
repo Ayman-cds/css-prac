@@ -18,12 +18,13 @@ type Row = {
   raw_sms: string;
   notes: string | null;
   user_corrected: boolean;
+  hidden: boolean;
   created_at: string;
   categories: { slug: CategorySlug; name: string; emoji: string; color: string } | null;
 };
 
 const TX_SELECT =
-  "id, occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, merchant_id, category_id, category_confidence, balance_qar, raw_sms, notes, user_corrected, created_at, categories(slug, name, emoji, color)";
+  "id, occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, merchant_id, category_id, category_confidence, balance_qar, raw_sms, notes, user_corrected, hidden, created_at, categories(slug, name, emoji, color)";
 
 function mapTx(rows: Row[] | null): TransactionWithCategory[] {
   return (rows ?? []).map((r) => ({
@@ -42,11 +43,16 @@ function mapTx(rows: Row[] | null): TransactionWithCategory[] {
     raw_sms: r.raw_sms,
     notes: r.notes,
     user_corrected: r.user_corrected,
+    hidden: Boolean(r.hidden),
     created_at: r.created_at,
     category: r.categories,
   }));
 }
 
+/**
+ * Single-transaction lookup. Does NOT filter `hidden` — the detail page
+ * needs to be reachable so the user can un-hide.
+ */
 export async function getTransactionById(
   supabase: SupabaseClient,
   id: string,
@@ -57,7 +63,7 @@ export async function getTransactionById(
     .eq("id", id)
     .maybeSingle();
   if (!data) return null;
-  return mapTx([data as any])[0] ?? null;
+  return mapTx([data as unknown as Row])[0] ?? null;
 }
 
 export async function getRecentTransactions(
@@ -67,9 +73,10 @@ export async function getRecentTransactions(
   const { data } = await supabase
     .from("transactions")
     .select(TX_SELECT)
+    .eq("hidden", false)
     .order("occurred_at", { ascending: false })
     .limit(limit);
-  return mapTx(data as any);
+  return mapTx(data as unknown as Row[]);
 }
 
 export async function getTransactionsInRange(
@@ -80,10 +87,11 @@ export async function getTransactionsInRange(
   const { data } = await supabase
     .from("transactions")
     .select(TX_SELECT)
+    .eq("hidden", false)
     .gte("occurred_at", start.toISOString())
     .lte("occurred_at", end.toISOString())
     .order("occurred_at", { ascending: false });
-  return mapTx(data as any);
+  return mapTx(data as unknown as Row[]);
 }
 
 export async function getTransactionsByMerchant(
@@ -96,11 +104,12 @@ export async function getTransactionsByMerchant(
     .from("transactions")
     .select(TX_SELECT)
     .eq("merchant_id", merchantId)
+    .eq("hidden", false)
     .order("occurred_at", { ascending: false })
     .limit(limit);
   if (excludeId) q = q.neq("id", excludeId);
   const { data } = await q;
-  return mapTx(data as any);
+  return mapTx(data as unknown as Row[]);
 }
 
 export async function getMonthSummary(supabase: SupabaseClient, month: Date) {
@@ -206,6 +215,10 @@ export type SearchFilters = {
   to?: string;
   minAmount?: number;
   maxAmount?: number;
+  /** When true, returns hidden transactions instead of visible ones. */
+  onlyHidden?: boolean;
+  /** When true, returns hidden + visible together. */
+  includeHidden?: boolean;
 };
 
 export async function searchTransactions(
@@ -218,6 +231,8 @@ export async function searchTransactions(
     .select(TX_SELECT)
     .order("occurred_at", { ascending: false })
     .limit(limit);
+  if (f.onlyHidden) q = q.eq("hidden", true);
+  else if (!f.includeHidden) q = q.eq("hidden", false);
   if (f.q) q = q.ilike("merchant_raw", `%${f.q}%`);
   if (f.categoryId) q = q.eq("category_id", f.categoryId);
   if (f.card) q = q.eq("card_last_digit", f.card);
@@ -226,5 +241,5 @@ export async function searchTransactions(
   if (f.minAmount != null) q = q.gte("amount_qar", f.minAmount);
   if (f.maxAmount != null) q = q.lte("amount_qar", f.maxAmount);
   const { data } = await q;
-  return mapTx(data as any);
+  return mapTx(data as unknown as Row[]);
 }

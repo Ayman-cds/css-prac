@@ -18,6 +18,7 @@ export function TransactionRow({
       href={`/transactions/${tx.id}`}
       className={cn(
         "group flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-bg-hover",
+        tx.hidden && "opacity-50",
         className,
       )}
     >
@@ -39,6 +40,11 @@ export function TransactionRow({
           {tx.card_last_digit && (
             <span className="text-[10px] uppercase tracking-wider text-ink-dim">
               ·{tx.card_last_digit}
+            </span>
+          )}
+          {tx.hidden && (
+            <span className="rounded-full bg-warn/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-warn">
+              hidden
             </span>
           )}
         </div>

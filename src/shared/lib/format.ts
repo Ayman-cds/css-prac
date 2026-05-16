@@ -47,12 +47,18 @@ export function dirFor(s: string): "rtl" | "ltr" {
  * Strip noise from QNB merchant strings.
  *  - "UBER * PENDING" → "UBER"
  *  - "UBR* PENDING.UBER.COM" → "UBER"
+ *  - "CYBS SNOONU TRADING EC" → "SNOONU TRADING"
+ *  - "AUTH CARREFOUR" → "CARREFOUR"
  */
 export function normalizeMerchant(raw: string): string {
   if (!raw) return "";
   let s = raw.trim().toUpperCase();
   if (/UBER|UBR/.test(s) && /PENDING/.test(s)) return "UBER";
   s = s
+    // Payment-processor prefixes (CYBS = CyberSource, AUTH = pre-auth, etc.)
+    .replace(/^(CYBS|AUTH|PRE|PMT|PAY|PURCH|POS|TX|TXN|REF)\s+/i, "")
+    // Trailing tokens that some QNB feeds append
+    .replace(/\s+(EC|POS|TX|TXN|REF|QA|QAT|QATAR|DOH)$/i, "")
     .replace(/\.COM\b/g, "")
     .replace(/\bPENDING\b/g, "")
     .replace(/[*•·]+/g, " ")

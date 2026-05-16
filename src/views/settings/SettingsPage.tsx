@@ -5,6 +5,7 @@ import { getBudgets } from "@/entities/budget";
 import { Card } from "@/shared/ui/card";
 import { BudgetsEditor } from "@/features/manage-budgets";
 import { ReanalyzeCard } from "@/features/reanalyze-merchants";
+import { MergeMerchantsButton } from "@/features/merge-merchants";
 import { CreateSmartCategoryForm } from "@/features/create-smart-category";
 import { listSmartCategories } from "@/entities/smart-category";
 import { SmartCategoriesList } from "@/widgets/smart-categories-list";
@@ -62,9 +63,9 @@ export async function SettingsPage() {
           <ul className="-mx-3 max-h-[480px] divide-y divide-line/40 overflow-y-auto">
             {merchants.map((m) => (
               <li key={m.id} className="flex items-center justify-between gap-3 rounded-xl px-3 py-3">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="truncate text-[14px] font-medium text-ink">{m.display_name}</div>
-                  <div className="mt-1 flex items-center gap-2 text-[12px] text-ink-muted">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-ink-muted">
                     <CategoryBadge
                       emoji={m.categories?.emoji}
                       name={m.categories?.name}
@@ -81,11 +82,23 @@ export async function SettingsPage() {
                     )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="tabular text-[13px] text-ink">
-                    {formatQar(Number(m.total_spent_qar))}
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="tabular text-[13px] text-ink">
+                      {formatQar(Number(m.total_spent_qar))}
+                    </div>
+                    <div className="text-[11px] text-ink-dim">{m.times_seen} seen</div>
                   </div>
-                  <div className="text-[11px] text-ink-dim">{m.times_seen} seen</div>
+                  <MergeMerchantsButton
+                    sourceId={m.id}
+                    sourceName={m.display_name}
+                    candidates={merchants.map((other) => ({
+                      id: other.id,
+                      display_name: other.display_name,
+                      normalized_name: other.normalized_name,
+                      times_seen: other.times_seen,
+                    }))}
+                  />
                 </div>
               </li>
             ))}

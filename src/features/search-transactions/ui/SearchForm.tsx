@@ -4,10 +4,18 @@ import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/entities/category";
 
+type View = "visible" | "hidden" | "all";
+
 export function SearchForm({ categories }: { categories: Category[] }) {
   const router = useRouter();
   const sp = useSearchParams();
   const [, startTransition] = useTransition();
+
+  const initialView: View = sp.get("onlyHidden") === "true"
+    ? "hidden"
+    : sp.get("includeHidden") === "true"
+    ? "all"
+    : "visible";
 
   const [q, setQ] = useState(sp.get("q") ?? "");
   const [categoryId, setCategoryId] = useState(sp.get("categoryId") ?? "");
@@ -16,9 +24,9 @@ export function SearchForm({ categories }: { categories: Category[] }) {
   const [to, setTo] = useState(sp.get("to") ?? "");
   const [minAmount, setMinAmount] = useState(sp.get("minAmount") ?? "");
   const [maxAmount, setMaxAmount] = useState(sp.get("maxAmount") ?? "");
+  const [view, setView] = useState<View>(initialView);
 
-  function submit(e?: React.FormEvent) {
-    e?.preventDefault();
+  function buildParams(): URLSearchParams {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (categoryId) params.set("categoryId", categoryId);
@@ -27,11 +35,19 @@ export function SearchForm({ categories }: { categories: Category[] }) {
     if (to) params.set("to", to);
     if (minAmount) params.set("minAmount", minAmount);
     if (maxAmount) params.set("maxAmount", maxAmount);
-    startTransition(() => router.push(`/search?${params.toString()}`));
+    if (view === "hidden") params.set("onlyHidden", "true");
+    else if (view === "all") params.set("includeHidden", "true");
+    return params;
+  }
+
+  function submit(e?: React.FormEvent) {
+    e?.preventDefault();
+    startTransition(() => router.push(`/search?${buildParams().toString()}`));
   }
 
   function reset() {
     setQ(""); setCategoryId(""); setCard(""); setFrom(""); setTo(""); setMinAmount(""); setMaxAmount("");
+    setView("visible");
     startTransition(() => router.push("/search"));
   }
 
@@ -52,6 +68,29 @@ export function SearchForm({ categories }: { categories: Category[] }) {
           className="w-full rounded-full bg-bg-elev py-2.5 pl-9 pr-3 text-[15px] text-ink ring-1 ring-line placeholder:text-ink-dim focus:outline-none focus:ring-accent/50"
         />
       </div>
+
+      <div className="inline-flex rounded-full bg-bg-elev p-1 ring-1 ring-line">
+        {(
+          [
+            { key: "visible", label: "Visible" },
+            { key: "hidden", label: "Hidden" },
+            { key: "all", label: "All" },
+          ] as Array<{ key: View; label: string }>
+        ).map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => setView(opt.key)}
+            className={
+              "rounded-full px-3 py-1 text-[12px] font-medium transition-colors" +
+              (view === opt.key ? " bg-accent text-white" : " text-ink-muted hover:text-ink")
+            }
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
         <select
           value={categoryId}
@@ -119,7 +158,7 @@ export function SearchForm({ categories }: { categories: Category[] }) {
         </button>
         <span className="ml-auto text-[12px] text-ink-muted">
           <a
-            href={`/api/export?${new URLSearchParams({ q, categoryId, card, from, to, minAmount, maxAmount }).toString()}`}
+            href={`/api/export?${buildParams().toString()}`}
             className="hover:text-ink hover:underline"
           >
             Export CSV ↓

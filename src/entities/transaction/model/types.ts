@@ -15,6 +15,7 @@ export type Transaction = {
   raw_sms: string;
   notes: string | null;
   user_corrected: boolean;
+  hidden: boolean;
   created_at: string;
 };
 

@@ -5,7 +5,7 @@ import type {
 import type { SmartCategoryFilter } from "@/entities/smart-category";
 
 const TX_SELECT =
-  "id, occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, merchant_id, category_id, category_confidence, balance_qar, raw_sms, notes, user_corrected, created_at, categories(slug, name, emoji, color)";
+  "id, occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, merchant_id, category_id, category_confidence, balance_qar, raw_sms, notes, user_corrected, hidden, created_at, categories(slug, name, emoji, color)";
 
 type Row = {
   id: string;
@@ -22,6 +22,7 @@ type Row = {
   raw_sms: string;
   notes: string | null;
   user_corrected: boolean;
+  hidden: boolean;
   created_at: string;
   categories: { slug: string; name: string; emoji: string; color: string } | null;
 };
@@ -43,6 +44,7 @@ function mapTx(rows: Row[]): TransactionWithCategory[] {
     raw_sms: r.raw_sms,
     notes: r.notes,
     user_corrected: r.user_corrected,
+    hidden: Boolean(r.hidden),
     created_at: r.created_at,
     category: r.categories as TransactionWithCategory["category"],
   }));
@@ -64,6 +66,7 @@ export async function evaluateSmartCategoryFilter(
     .from("transactions")
     .select(TX_SELECT)
     .eq("user_id", userId)
+    .eq("hidden", false)
     .order("occurred_at", { ascending: false })
     .limit(limit);
 
