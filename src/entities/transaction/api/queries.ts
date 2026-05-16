@@ -18,13 +18,29 @@ type Row = {
   raw_sms: string;
   notes: string | null;
   user_corrected: boolean;
-  hidden: boolean;
+  hidden?: boolean;
   created_at: string;
   categories: { slug: CategorySlug; name: string; emoji: string; color: string } | null;
 };
 
-const TX_SELECT =
-  "id, occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, merchant_id, category_id, category_confidence, balance_qar, raw_sms, notes, user_corrected, hidden, created_at, categories(slug, name, emoji, color)";
+const TX_SELECT_BASE =
+  "id, occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, merchant_id, category_id, category_confidence, balance_qar, raw_sms, notes, user_corrected, created_at, categories(slug, name, emoji, color)";
+const TX_SELECT_FULL = TX_SELECT_BASE.replace("user_corrected,", "user_corrected, hidden,");
+
+/**
+ * Detect whether the `hidden` column exists on `transactions`.
+ * Caches per server instance. If migration 0004 hasn't been applied yet,
+ * the hide feature silently no-ops instead of breaking every read query.
+ */
+let _hasHiddenColumn: boolean | null = null;
+async function hasHiddenColumn(supabase: SupabaseClient): Promise<boolean> {
+  if (_hasHiddenColumn !== null) return _hasHiddenColumn;
+  const { error } = await supabase
+    .from("transactions")
+    .select("hidden", { count: "exact", head: true });
+  _hasHiddenColumn = !(error && (error.code === "42703" || /hidden/i.test(error.message ?? "")));
+  return _hasHiddenColumn;
+}
 
 function mapTx(rows: Row[] | null): TransactionWithCategory[] {
   return (rows ?? []).map((r) => ({
@@ -50,16 +66,17 @@ function mapTx(rows: Row[] | null): TransactionWithCategory[] {
 }
 
 /**
- * Single-transaction lookup. Does NOT filter `hidden` — the detail page
- * needs to be reachable so the user can un-hide.
+ * Single-transaction lookup. Doesn't filter `hidden` so users can still
+ * reach the detail page of a hidden row to un-hide it.
  */
 export async function getTransactionById(
   supabase: SupabaseClient,
   id: string,
 ): Promise<TransactionWithCategory | null> {
+  const supports = await hasHiddenColumn(supabase);
   const { data } = await supabase
     .from("transactions")
-    .select(TX_SELECT)
+    .select(supports ? TX_SELECT_FULL : TX_SELECT_BASE)
     .eq("id", id)
     .maybeSingle();
   if (!data) return null;
@@ -70,12 +87,14 @@ export async function getRecentTransactions(
   supabase: SupabaseClient,
   limit = 20,
 ): Promise<TransactionWithCategory[]> {
-  const { data } = await supabase
+  const supports = await hasHiddenColumn(supabase);
+  let q = supabase
     .from("transactions")
-    .select(TX_SELECT)
-    .eq("hidden", false)
+    .select(supports ? TX_SELECT_FULL : TX_SELECT_BASE)
     .order("occurred_at", { ascending: false })
     .limit(limit);
+  if (supports) q = q.eq("hidden", false);
+  const { data } = await q;
   return mapTx(data as unknown as Row[]);
 }
 
@@ -84,13 +103,15 @@ export async function getTransactionsInRange(
   start: Date,
   end: Date,
 ): Promise<TransactionWithCategory[]> {
-  const { data } = await supabase
+  const supports = await hasHiddenColumn(supabase);
+  let q = supabase
     .from("transactions")
-    .select(TX_SELECT)
-    .eq("hidden", false)
+    .select(supports ? TX_SELECT_FULL : TX_SELECT_BASE)
     .gte("occurred_at", start.toISOString())
     .lte("occurred_at", end.toISOString())
     .order("occurred_at", { ascending: false });
+  if (supports) q = q.eq("hidden", false);
+  const { data } = await q;
   return mapTx(data as unknown as Row[]);
 }
 
@@ -100,13 +121,14 @@ export async function getTransactionsByMerchant(
   excludeId?: string,
   limit = 10,
 ): Promise<TransactionWithCategory[]> {
+  const supports = await hasHiddenColumn(supabase);
   let q = supabase
     .from("transactions")
-    .select(TX_SELECT)
+    .select(supports ? TX_SELECT_FULL : TX_SELECT_BASE)
     .eq("merchant_id", merchantId)
-    .eq("hidden", false)
     .order("occurred_at", { ascending: false })
     .limit(limit);
+  if (supports) q = q.eq("hidden", false);
   if (excludeId) q = q.neq("id", excludeId);
   const { data } = await q;
   return mapTx(data as unknown as Row[]);
@@ -215,9 +237,7 @@ export type SearchFilters = {
   to?: string;
   minAmount?: number;
   maxAmount?: number;
-  /** When true, returns hidden transactions instead of visible ones. */
   onlyHidden?: boolean;
-  /** When true, returns hidden + visible together. */
   includeHidden?: boolean;
 };
 
@@ -226,13 +246,16 @@ export async function searchTransactions(
   f: SearchFilters,
   limit = 200,
 ): Promise<TransactionWithCategory[]> {
+  const supports = await hasHiddenColumn(supabase);
   let q = supabase
     .from("transactions")
-    .select(TX_SELECT)
+    .select(supports ? TX_SELECT_FULL : TX_SELECT_BASE)
     .order("occurred_at", { ascending: false })
     .limit(limit);
-  if (f.onlyHidden) q = q.eq("hidden", true);
-  else if (!f.includeHidden) q = q.eq("hidden", false);
+  if (supports) {
+    if (f.onlyHidden) q = q.eq("hidden", true);
+    else if (!f.includeHidden) q = q.eq("hidden", false);
+  }
   if (f.q) q = q.ilike("merchant_raw", `%${f.q}%`);
   if (f.categoryId) q = q.eq("category_id", f.categoryId);
   if (f.card) q = q.eq("card_last_digit", f.card);

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { toCsv } from "@/shared/lib";
 
@@ -14,9 +15,19 @@ type ExportRow = {
   balance_qar: number | null;
   notes: string | null;
   user_corrected: boolean;
-  hidden: boolean;
+  hidden?: boolean;
   categories: { slug: string; name: string } | null;
 };
+
+let _hasHiddenColumn: boolean | null = null;
+async function hasHiddenColumn(supabase: SupabaseClient): Promise<boolean> {
+  if (_hasHiddenColumn !== null) return _hasHiddenColumn;
+  const { error } = await supabase
+    .from("transactions")
+    .select("hidden", { count: "exact", head: true });
+  _hasHiddenColumn = !(error && (error.code === "42703" || /hidden/i.test(error.message ?? "")));
+  return _hasHiddenColumn;
+}
 
 export async function GET(req: NextRequest) {
   const supabase = createSupabaseServerClient();
@@ -25,15 +36,18 @@ export async function GET(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
+  const supports = await hasHiddenColumn(supabase);
   const includeHidden = req.nextUrl.searchParams.get("includeHidden") === "true";
+
+  const baseSelect =
+    "occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, balance_qar, notes, user_corrected, categories(slug, name)";
+  const selectStr = supports ? `${baseSelect}, hidden` : baseSelect;
 
   let q = supabase
     .from("transactions")
-    .select(
-      "occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, balance_qar, notes, user_corrected, hidden, categories(slug, name)",
-    )
+    .select(selectStr)
     .order("occurred_at", { ascending: false });
-  if (!includeHidden) q = q.eq("hidden", false);
+  if (supports && !includeHidden) q = q.eq("hidden", false);
 
   const { data: rows } = await q;
 

@@ -35,7 +35,24 @@ export async function PATCH(
     .from("transactions")
     .update(patch)
     .eq("id", params.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (error) {
+    // Graceful message when hide is used before migration 0004 is applied.
+    if (
+      typeof body.hidden === "boolean" &&
+      (error.code === "42703" || /hidden/i.test(error.message ?? ""))
+    ) {
+      return NextResponse.json(
+        {
+          error: "migration_needed",
+          detail:
+            "The hide feature needs migration 0004_hide_transactions.sql to be applied to your Supabase project.",
+        },
+        { status: 409 },
+      );
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   return NextResponse.json({ status: "ok" });
 }

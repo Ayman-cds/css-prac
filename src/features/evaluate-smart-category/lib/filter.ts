@@ -4,8 +4,19 @@ import type {
 } from "@/entities/transaction";
 import type { SmartCategoryFilter } from "@/entities/smart-category";
 
-const TX_SELECT =
-  "id, occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, merchant_id, category_id, category_confidence, balance_qar, raw_sms, notes, user_corrected, hidden, created_at, categories(slug, name, emoji, color)";
+const TX_SELECT_BASE =
+  "id, occurred_at, card_last_digit, amount_qar, is_approximate, merchant_raw, merchant_normalized, merchant_id, category_id, category_confidence, balance_qar, raw_sms, notes, user_corrected, created_at, categories(slug, name, emoji, color)";
+const TX_SELECT_FULL = TX_SELECT_BASE.replace("user_corrected,", "user_corrected, hidden,");
+
+let _hasHiddenColumn: boolean | null = null;
+async function hasHiddenColumn(supabase: SupabaseClient): Promise<boolean> {
+  if (_hasHiddenColumn !== null) return _hasHiddenColumn;
+  const { error } = await supabase
+    .from("transactions")
+    .select("hidden", { count: "exact", head: true });
+  _hasHiddenColumn = !(error && (error.code === "42703" || /hidden/i.test(error.message ?? "")));
+  return _hasHiddenColumn;
+}
 
 type Row = {
   id: string;
@@ -22,7 +33,7 @@ type Row = {
   raw_sms: string;
   notes: string | null;
   user_corrected: boolean;
-  hidden: boolean;
+  hidden?: boolean;
   created_at: string;
   categories: { slug: string; name: string; emoji: string; color: string } | null;
 };
@@ -62,13 +73,14 @@ export async function evaluateSmartCategoryFilter(
   filter: SmartCategoryFilter,
   limit = 1000,
 ): Promise<TransactionWithCategory[]> {
+  const supports = await hasHiddenColumn(supabase);
   let q = supabase
     .from("transactions")
-    .select(TX_SELECT)
+    .select(supports ? TX_SELECT_FULL : TX_SELECT_BASE)
     .eq("user_id", userId)
-    .eq("hidden", false)
     .order("occurred_at", { ascending: false })
     .limit(limit);
+  if (supports) q = q.eq("hidden", false);
 
   if (filter.fromDate) q = q.gte("occurred_at", filter.fromDate);
   if (filter.toDate) q = q.lte("occurred_at", filter.toDate);
