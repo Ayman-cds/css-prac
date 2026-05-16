@@ -33,7 +33,7 @@ export async function OverviewPage() {
 
   const [summary, recent, dailyTrend, budgets, insights] = await Promise.all([
     getMonthSummary(supabase, now),
-    getRecentTransactions(supabase, 12),
+    getRecentTransactions(supabase, 20),
     getDailySpend(supabase, 30),
     getBudgets(supabase),
     user ? getOrGenerateInsights(supabase, user.id) : Promise.resolve([]),
@@ -69,6 +69,8 @@ export async function OverviewPage() {
 
   return (
     <div className="space-y-6">
+      <RecentTransactionsCard transactions={recent} />
+
       <MonthSummaryHero
         monthLabel={monthLabel}
         total={summary.total}
@@ -86,8 +88,6 @@ export async function OverviewPage() {
       </CardGrid>
 
       <BudgetListCard budgets={budgetsWithSpent} monthLabel={monthLabel} />
-
-      <RecentTransactionsCard transactions={recent} />
     </div>
   );
 }
