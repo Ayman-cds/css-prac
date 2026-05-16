@@ -22,10 +22,14 @@ type ExportRow = {
 let _hasHiddenColumn: boolean | null = null;
 async function hasHiddenColumn(supabase: SupabaseClient): Promise<boolean> {
   if (_hasHiddenColumn !== null) return _hasHiddenColumn;
-  const { error } = await supabase
-    .from("transactions")
-    .select("hidden", { count: "exact", head: true });
-  _hasHiddenColumn = !(error && (error.code === "42703" || /hidden/i.test(error.message ?? "")));
+  try {
+    const { error } = await supabase
+      .from("transactions")
+      .select("hidden", { count: "exact", head: true });
+    _hasHiddenColumn = !error;
+  } catch {
+    _hasHiddenColumn = false;
+  }
   return _hasHiddenColumn;
 }
 

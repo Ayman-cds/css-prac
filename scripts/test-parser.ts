@@ -90,6 +90,15 @@ const cases: Case[] = [
     expect: { amountQar: 73, merchantContains: "BATTERY" },
   },
   {
+    name: "USD (Noon) — converts to QAR, marks approximate",
+    text: `تمت عملية شراء ببطاقة الائتمانية.\r\n التفاصيل: \r\nرقم البطاقة: فيزا8 \r\nالمبلغ: USD 35.74تقريباً \r\nالموقع: Noon\r\nالرصيد: QAR 1234.56`,
+    expect: {
+      cardLastDigit: "8",
+      merchantContains: "Noon",
+      approximate: true,
+    },
+  },
+  {
     name: "Login notification — ignore",
     text: `تم تسجيل الدخول بنجاح في خدمة QNB المصرفية`,
     expect: null,

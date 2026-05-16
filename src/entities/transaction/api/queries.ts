@@ -29,16 +29,26 @@ const TX_SELECT_FULL = TX_SELECT_BASE.replace("user_corrected,", "user_corrected
 
 /**
  * Detect whether the `hidden` column exists on `transactions`.
- * Caches per server instance. If migration 0004 hasn't been applied yet,
- * the hide feature silently no-ops instead of breaking every read query.
+ * Caches per server instance. Defaults to false on ANY error so a flaky
+ * probe (network blip, RLS quirk, unfamiliar error code) never blocks
+ * the dashboard.
  */
 let _hasHiddenColumn: boolean | null = null;
 async function hasHiddenColumn(supabase: SupabaseClient): Promise<boolean> {
   if (_hasHiddenColumn !== null) return _hasHiddenColumn;
-  const { error } = await supabase
-    .from("transactions")
-    .select("hidden", { count: "exact", head: true });
-  _hasHiddenColumn = !(error && (error.code === "42703" || /hidden/i.test(error.message ?? "")));
+  try {
+    const { error } = await supabase
+      .from("transactions")
+      .select("hidden", { count: "exact", head: true });
+    _hasHiddenColumn = !error;
+    console.log(
+      `[queries] hidden-column probe: ${_hasHiddenColumn ? "present" : "absent"}` +
+        (error ? ` (error: ${error.code} ${error.message})` : ""),
+    );
+  } catch (err) {
+    _hasHiddenColumn = false;
+    console.warn(`[queries] hidden-column probe threw, defaulting to absent: ${String(err)}`);
+  }
   return _hasHiddenColumn;
 }
 

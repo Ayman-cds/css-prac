@@ -173,6 +173,8 @@ export async function POST(req: NextRequest) {
     requestId,
     cardLastDigit: parsed.cardLastDigit,
     amountQar: parsed.amountQar,
+    originalCurrency: parsed.originalCurrency,
+    originalAmount: parsed.originalAmount,
     merchantRaw: parsed.merchantRaw,
     isApproximate: parsed.isApproximate,
     hasBalance: parsed.balanceQar != null,

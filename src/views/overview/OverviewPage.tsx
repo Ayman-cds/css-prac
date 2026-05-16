@@ -39,6 +39,10 @@ export async function OverviewPage() {
     user ? getOrGenerateInsights(supabase, user.id) : Promise.resolve([]),
   ]);
 
+  console.log(
+    `[overview] userId=${user?.id ?? "none"} monthTxs=${summary.txCount} monthTotal=${summary.total} recentCount=${recent.length} dailyDatapoints=${dailyTrend.length}`,
+  );
+
   // Anomalies: recent (30d) vs prior 90d.
   const recentRange = lastNDays(30, now);
   const historicalStart = subDays(recentRange.start, 90);
