@@ -1,0 +1,1 @@
+export { SmartCategoryDetailPage } from "./SmartCategoryDetailPage";

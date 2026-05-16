@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { Nav } from "@/widgets/nav";
+import { listSmartCategories } from "@/entities/smart-category";
 
 /**
  * Protected layout. Every route inside this group is gated by getUser().
@@ -22,9 +23,20 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  // Smart categories are user-defined; surface them in the sidebar so they
+  // feel like first-class destinations. Tolerate missing table (pre-0003
+  // migration) — if the query fails we just render an empty list.
+  let smartCategories: { id: string; name: string; emoji: string }[] = [];
+  try {
+    const items = await listSmartCategories(supabase);
+    smartCategories = items.map((i) => ({ id: i.id, name: i.name, emoji: i.emoji }));
+  } catch {
+    /* table doesn't exist yet — ignore */
+  }
+
   return (
     <div className="min-h-screen pb-28 md:pb-0 md:pl-60">
-      <Nav userEmail={user.email} />
+      <Nav userEmail={user.email} smartCategories={smartCategories} />
       <main className="mx-auto w-full max-w-5xl px-4 pt-6 pb-10 sm:px-6 md:pt-12 md:pb-16">
         {children}
       </main>

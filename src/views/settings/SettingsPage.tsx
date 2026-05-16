@@ -5,15 +5,19 @@ import { getBudgets } from "@/entities/budget";
 import { Card } from "@/shared/ui/card";
 import { BudgetsEditor } from "@/features/manage-budgets";
 import { ReanalyzeCard } from "@/features/reanalyze-merchants";
+import { CreateSmartCategoryForm } from "@/features/create-smart-category";
+import { listSmartCategories } from "@/entities/smart-category";
+import { SmartCategoriesList } from "@/widgets/smart-categories-list";
 import { CategoryBadge } from "@/entities/category";
 import { formatQar } from "@/shared/lib";
 
 export async function SettingsPage() {
   const supabase = createSupabaseServerClient();
-  const [categories, merchants, budgets] = await Promise.all([
+  const [categories, merchants, budgets, smartCategories] = await Promise.all([
     getCategories(supabase),
     getMerchants(supabase),
     getBudgets(supabase),
+    listSmartCategories(supabase),
   ]);
 
   const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
@@ -29,6 +33,16 @@ export async function SettingsPage() {
           Tune categorization, budgets, and integrations.
         </p>
       </header>
+
+      <Card
+        title="Smart categories"
+        hint={`${smartCategories.length} active`}
+      >
+        <CreateSmartCategoryForm />
+        <div className="mt-6">
+          <SmartCategoriesList items={smartCategories} />
+        </div>
+      </Card>
 
       <Card
         title="Re-analyze with AI"

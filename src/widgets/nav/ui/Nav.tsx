@@ -80,10 +80,16 @@ function NavIcon({ name }: { name: string }) {
   }
 }
 
-export function Nav({ userEmail }: { userEmail?: string | null }) {
+export function Nav({
+  userEmail,
+  smartCategories = [],
+}: {
+  userEmail?: string | null;
+  smartCategories?: Array<{ id: string; name: string; emoji: string }>;
+}) {
   return (
     <>
-      <aside className="hidden md:fixed md:inset-y-0 md:left-0 md:flex md:w-60 md:flex-col md:px-4 md:py-8">
+      <aside className="hidden md:fixed md:inset-y-0 md:left-0 md:flex md:w-60 md:flex-col md:overflow-y-auto md:px-4 md:py-8">
         <div className="glass mb-3 rounded-2xl px-4 py-5">
           <div className="text-[15px] font-semibold tracking-tight text-ink">QNB Expenses</div>
           <div className="mt-0.5 text-[12px] text-ink-muted">personal intelligence</div>
@@ -102,7 +108,24 @@ export function Nav({ userEmail }: { userEmail?: string | null }) {
             </Link>
           ))}
         </nav>
-        <div className="mt-auto">
+        {smartCategories.length > 0 && (
+          <nav className="mt-6 flex flex-col gap-0.5">
+            <div className="mb-1 px-3 text-[10px] font-medium uppercase tracking-[0.10em] text-ink-dim">
+              Smart
+            </div>
+            {smartCategories.map((s) => (
+              <Link
+                key={s.id}
+                href={`/smart/${s.id}`}
+                className="group flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] text-ink/90 transition-colors hover:bg-bg-hover"
+              >
+                <span className="text-[14px]">{s.emoji}</span>
+                <span className="truncate">{s.name}</span>
+              </Link>
+            ))}
+          </nav>
+        )}
+        <div className="mt-auto pt-4">
           {userEmail && (
             <div className="mb-2 px-3 text-[11px] text-ink-dim">
               <div className="truncate">{userEmail}</div>
