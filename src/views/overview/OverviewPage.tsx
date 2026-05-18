@@ -1,4 +1,4 @@
-import { subDays } from "date-fns";
+import { subDays, startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns";
 import { createSupabaseServerClient } from "@/shared/api/supabase";
 import { lastNDays, monthRange } from "@/shared/lib";
 import {
@@ -30,16 +30,34 @@ export async function OverviewPage() {
     year: "numeric",
   });
 
-  const [summary, recent, dailyTrend, budgets, insights] = await Promise.all([
-    getMonthSummary(supabase, now),
-    getRecentTransactions(supabase, 20),
-    getDailySpend(supabase, 30),
-    getBudgets(supabase),
-    user ? getOrGenerateInsights(supabase, user.id) : Promise.resolve([]),
-  ]);
+  const todayRange = { start: startOfDay(now), end: endOfDay(now) };
+  const weekRange = {
+    start: startOfWeek(now, { weekStartsOn: 0 }),
+    end: endOfWeek(now, { weekStartsOn: 0 }),
+  };
+
+  const [summary, recent, dailyTrend, budgets, insights, todayTx, weekTx] =
+    await Promise.all([
+      getMonthSummary(supabase, now),
+      getRecentTransactions(supabase, 20),
+      getDailySpend(supabase, 30),
+      getBudgets(supabase),
+      user ? getOrGenerateInsights(supabase, user.id) : Promise.resolve([]),
+      getTransactionsInRange(supabase, todayRange.start, todayRange.end),
+      getTransactionsInRange(supabase, weekRange.start, weekRange.end),
+    ]);
+
+  const today = {
+    total: todayTx.reduce((a, t) => a + Number(t.amount_qar), 0),
+    count: todayTx.length,
+  };
+  const week = {
+    total: weekTx.reduce((a, t) => a + Number(t.amount_qar), 0),
+    count: weekTx.length,
+  };
 
   console.log(
-    `[overview] userId=${user?.id ?? "none"} monthTxs=${summary.txCount} monthTotal=${summary.total} recentCount=${recent.length} dailyDatapoints=${dailyTrend.length}`,
+    `[overview] userId=${user?.id ?? "none"} today=${today.total} week=${week.total} month=${summary.total} monthTxs=${summary.txCount} recentCount=${recent.length}`,
   );
 
   // Anomalies: recent (30d) vs prior 90d.
@@ -70,9 +88,10 @@ export async function OverviewPage() {
     <div className="space-y-6">
       <HeadlineCard
         monthLabel={monthLabel}
-        total={summary.total}
-        prevTotal={summary.prevTotal}
-        txCount={summary.txCount}
+        today={today}
+        week={week}
+        month={{ total: summary.total, count: summary.txCount }}
+        prevMonthTotal={summary.prevTotal}
         anomalies={anomalies}
       />
 

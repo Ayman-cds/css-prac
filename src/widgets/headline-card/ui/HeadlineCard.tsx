@@ -9,20 +9,24 @@ const REASON_LABEL: Record<Anomaly["reason"], string> = {
   category_spike: "Category spending spike",
 };
 
+type Stat = { total: number; count: number };
+
 export function HeadlineCard({
   monthLabel,
-  total,
-  prevTotal,
-  txCount,
+  today,
+  week,
+  month,
+  prevMonthTotal,
   anomalies,
 }: {
   monthLabel: string;
-  total: number;
-  prevTotal: number;
-  txCount: number;
+  today: Stat;
+  week: Stat;
+  month: Stat;
+  prevMonthTotal: number;
   anomalies: Anomaly[];
 }) {
-  const delta = pctChange(total, prevTotal);
+  const monthDelta = pctChange(month.total, prevMonthTotal);
   const preview = anomalies.slice(0, 2);
   const moreCount = Math.max(0, anomalies.length - preview.length);
 
@@ -32,42 +36,31 @@ export function HeadlineCard({
         {monthLabel}
       </div>
 
-      <div className="mt-3 flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <Amount amount={total} size="hero" />
-          <div className="mt-2 flex items-center gap-2">
-            <DeltaPill pct={delta} />
-            <span className="text-[12px] text-ink-muted">
-              vs last month
-              {prevTotal > 0 ? ` · ${Math.round(prevTotal).toLocaleString()} QAR` : ""}
-            </span>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-[11px] uppercase tracking-[0.10em] text-ink-dim">
-            Transactions
-          </div>
-          <div className="tabular mt-1 font-display text-[24px] font-semibold tracking-display text-ink">
-            {txCount}
-          </div>
-        </div>
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <StatBlock label="Today" total={today.total} count={today.count} />
+        <StatBlock label="This week" total={week.total} count={week.count} />
+        <StatBlock
+          label="This month"
+          total={month.total}
+          count={month.count}
+          delta={monthDelta}
+          emphasized
+        />
       </div>
 
       {anomalies.length > 0 && (
         <div className="mt-5 border-t border-line pt-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.10em] text-warn">
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none">
-                <path
-                  d="M12 9v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 0 0-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3Z"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {anomalies.length} {anomalies.length === 1 ? "anomaly" : "anomalies"}
-            </div>
+          <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.10em] text-warn">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none">
+              <path
+                d="M12 9v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 0 0-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3Z"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {anomalies.length} {anomalies.length === 1 ? "anomaly" : "anomalies"}
           </div>
           <ul className="mt-2 space-y-1.5">
             {preview.map((a) => (
@@ -95,5 +88,42 @@ export function HeadlineCard({
         </div>
       )}
     </section>
+  );
+}
+
+function StatBlock({
+  label,
+  total,
+  count,
+  delta,
+  emphasized = false,
+}: {
+  label: string;
+  total: number;
+  count: number;
+  delta?: number | null;
+  emphasized?: boolean;
+}) {
+  return (
+    <div
+      className={
+        emphasized
+          ? "rounded-2xl bg-bg-elev p-3 ring-1 ring-line"
+          : "p-1"
+      }
+    >
+      <div className="text-[10px] font-medium uppercase tracking-[0.10em] text-ink-dim">
+        {label}
+      </div>
+      <div className="mt-1.5">
+        <Amount amount={total} size={emphasized ? "lg" : "md"} />
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+        {delta != null && <DeltaPill pct={delta} />}
+        <span className="text-[11px] text-ink-muted">
+          {count} {count === 1 ? "tx" : "tx"}
+        </span>
+      </div>
+    </div>
   );
 }
